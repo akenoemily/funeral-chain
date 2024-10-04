@@ -1,0 +1,69 @@
+type Booking = record {
+  id : nat64;
+  status : BookingStatusEnum;
+  service_date : nat64;
+  service_type : text;
+  service_provider_id : nat64;
+  created_at : nat64;
+  client_id : nat64;
+};
+type BookingPayload = record {
+  service_date : nat64;
+  service_type : text;
+  service_provider_id : nat64;
+  client_id : nat64;
+};
+type BookingStatusEnum = variant { Confirmed; Completed; Canceled; Pending };
+type Client = record { id : nat64; name : text; contact_info : text };
+type ClientPayload = record { name : text; contact_info : text };
+type Message = variant {
+  Error : text;
+  InvalidPayload : text;
+  NotFound : text;
+  Success : text;
+};
+type Result = variant { Ok : Message; Err : Message };
+type Result_1 = variant { Ok : Booking; Err : Message };
+type Result_2 = variant { Ok : Client; Err : Message };
+type Result_3 = variant { Ok : ServiceProvider; Err : Message };
+type Result_4 = variant { Ok : vec Booking; Err : Message };
+type Result_5 = variant { Ok : vec ServiceProvider; Err : Message };
+type Review = record {
+  created_at : nat64;
+  comment : text;
+  rating : nat8;
+  client_id : nat64;
+};
+type ReviewPayload = record {
+  comment : text;
+  rating : nat8;
+  booking_id : nat64;
+};
+type ServiceProvider = record {
+  id : nat64;
+  reviews : vec Review;
+  service_type : text;
+  name : text;
+  created_at : nat64;
+  availability : vec nat64;
+  contact_info : text;
+  average_rating : float32;
+};
+type ServiceProviderPayload = record {
+  service_type : text;
+  name : text;
+  availability : vec nat64;
+  contact_info : text;
+};
+service : {
+  add_review : (ReviewPayload) -> (Result);
+  cancel_booking : (nat64) -> (Result);
+  confirm_booking : (nat64) -> (Result);
+  create_booking : (BookingPayload) -> (Result_1);
+  create_client : (ClientPayload) -> (Result_2);
+  create_service_provider : (ServiceProviderPayload) -> (Result_3);
+  get_client_bookings : (nat64) -> (Result_4) query;
+  get_service_provider_history : (nat64) -> (Result_4) query;
+  reschedule_booking : (nat64, nat64) -> (Result);
+  search_service_providers : (text, opt text) -> (Result_5) query;
+}
