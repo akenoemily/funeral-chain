@@ -62,8 +62,10 @@ service : {
   create_booking : (BookingPayload) -> (Result_1);
   create_client : (ClientPayload) -> (Result_2);
   create_service_provider : (ServiceProviderPayload) -> (Result_3);
+  delete_service_provider : (nat64) -> (Result);
   get_client_bookings : (nat64) -> (Result_4) query;
   get_service_provider_history : (nat64) -> (Result_4) query;
   reschedule_booking : (nat64, nat64) -> (Result);
   search_service_providers : (text, opt text) -> (Result_5) query;
+  update_service_provider : (nat64, ServiceProviderPayload) -> (Result_3);
 }
