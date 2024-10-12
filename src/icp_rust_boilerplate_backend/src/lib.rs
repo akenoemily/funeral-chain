@@ -179,6 +179,90 @@ enum Message {
     InvalidPayload(String),
 }
 
+// Helper functions to reduce repetition and increase code reusability
+
+/// Helper to get the current time.
+fn current_time() -> u64 {
+    time()
+}
+
+/// Helper to increment and fetch the next available ID.
+fn next_id() -> u64 {
+    ID_COUNTER.with(|counter| {
+        let current_value = *counter.borrow().get();
+        counter.borrow_mut().set(current_value + 1).expect("Failed to increment ID counter");
+        current_value + 1
+    })
+}
+
+/// Helper to fetch a service provider by ID
+fn fetch_service_provider(id: u64) -> Result<ServiceProvider, Message> {
+    SERVICE_PROVIDER_STORAGE.with(|storage| {
+        storage
+            .borrow()
+            .get(&id)
+            .map(|provider| provider.clone())
+            .ok_or(Message::NotFound(format!("Service provider with ID {} not found", id)))
+    })
+}
+
+/// Helper to fetch a booking by ID
+fn fetch_booking(id: u64) -> Result<Booking, Message> {
+    BOOKING_STORAGE.with(|storage| {
+        storage
+            .borrow()
+            .get(&id)
+            .map(|booking| booking.clone())
+            .ok_or(Message::NotFound(format!("Booking with ID {} not found", id)))
+    })
+}
+
+/// Helper to fetch a client by ID
+fn fetch_client(id: u64) -> Result<Client, Message> {
+    CLIENT_STORAGE.with(|storage| {
+        storage
+            .borrow()
+            .get(&id)
+            .map(|client| client.clone())
+            .ok_or(Message::NotFound(format!("Client with ID {} not found", id)))
+    })
+}
+
+// Example for extended functionalities
+
+/// Delete a service provider by ID (New feature)
+#[ic_cdk::update]
+fn delete_service_provider(provider_id: u64) -> Result<Message, Message> {
+    SERVICE_PROVIDER_STORAGE.with(|storage| {
+        if storage.borrow_mut().remove(&provider_id).is_some() {
+            Ok(Message::Success(format!("Service provider with ID {} deleted.", provider_id)))
+        } else {
+            Err(Message::NotFound(format!("Service provider with ID {} not found.", provider_id)))
+        }
+    })
+}
+
+/// Update service provider details (New feature)
+#[ic_cdk::update]
+fn update_service_provider(id: u64, payload: ServiceProviderPayload) -> Result<ServiceProvider, Message> {
+    let mut provider = fetch_service_provider(id)?;
+    
+    // Validate input fields
+    if payload.name.is_empty() || payload.service_type.is_empty() || payload.contact_info.is_empty() {
+        return Err(Message::InvalidPayload("All fields must be provided.".to_string()));
+    }
+
+    provider.name = payload.name;
+    provider.service_type = payload.service_type;
+    provider.contact_info = payload.contact_info;
+    provider.availability = payload.availability;
+
+    // Save the updated provider
+    SERVICE_PROVIDER_STORAGE.with(|storage| storage.borrow_mut().insert(id, provider.clone()));
+
+    Ok(provider)
+}
+
 #[ic_cdk::update]
 fn create_service_provider(payload: ServiceProviderPayload) -> Result<ServiceProvider, Message> {
     if payload.name.is_empty() || payload.service_type.is_empty() || payload.contact_info.is_empty() {
@@ -484,10 +568,6 @@ fn get_service_provider_history(service_provider_id: u64) -> Result<Vec<Booking>
             Ok(bookings)
         }
     })
-}
-
-fn current_time() -> u64 {
-    time()
 }
 
 ic_cdk::export_candid!();
